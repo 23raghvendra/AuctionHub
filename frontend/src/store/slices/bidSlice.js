@@ -24,7 +24,7 @@ const bidSlice = createSlice({
 export const placeBid = (id, data) => async (dispatch) => {
   dispatch(bidSlice.actions.bidRequest());
   try {
-    const response = await axios.post(`http://localhost:8080/api/v1/bid/place/${id}`, data, {
+    const response = await axios.post(`https://auctionhub-mybe.onrender.com/api/v1/bid/place/${id}`, data, {
       withCredentials: true,
       headers: { "Content-Type": "application/json" },
     });

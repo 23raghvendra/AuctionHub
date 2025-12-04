@@ -24,7 +24,7 @@ export const postCommissionProof = (data) => async (dispatch) => {
   dispatch(commissionSlice.actions.postCommissionProofRequest());
   try {
     const response = await axios.post(
-      "http://localhost:8080/api/v1/commission/proof",
+      "https://auctionhub-mybe.onrender.com/api/v1/commission/proof",
       data,
       {
         withCredentials: true,

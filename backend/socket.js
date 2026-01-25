@@ -2,10 +2,17 @@ import { Server } from "socket.io";
 
 let io;
 
+// Allowed origins for Socket.io CORS
+const getAllowedOrigins = () => [
+    process.env.FRONTEND_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+].filter(Boolean);
+
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: [process.env.FRONTEND_URL],
+            origin: getAllowedOrigins(),
             methods: ["GET", "POST", "PUT", "DELETE"],
             credentials: true,
         },

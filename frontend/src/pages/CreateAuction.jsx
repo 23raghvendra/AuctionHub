@@ -90,7 +90,7 @@ const CreateAuction = () => {
 
           {/* Image Upload */}
           <div className="space-y-4">
-            <label className="text-sm font-bold text-zinc-900 uppercase tracking-wider">Item Image</label>
+            <label className="text-sm font-bold text-zinc-900 uppercase tracking-wider">Item Image <span className="text-red-500">*</span></label>
             <div className="flex items-center justify-center w-full">
               <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-zinc-200 border-dashed rounded-2xl cursor-pointer bg-zinc-50 hover:bg-zinc-100 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -113,7 +113,7 @@ const CreateAuction = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Title</label>
+              <label className="text-sm font-bold text-zinc-700">Title <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={title}
@@ -124,7 +124,7 @@ const CreateAuction = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Category</label>
+              <label className="text-sm font-bold text-zinc-700">Category <span className="text-red-500">*</span></label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -138,7 +138,7 @@ const CreateAuction = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Condition</label>
+              <label className="text-sm font-bold text-zinc-700">Condition <span className="text-red-500">*</span></label>
               <select
                 value={condition}
                 onChange={(e) => setCondition(e.target.value)}
@@ -151,7 +151,7 @@ const CreateAuction = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Starting Bid ($)</label>
+              <label className="text-sm font-bold text-zinc-700">Starting Bid ($) <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={startingBid}
@@ -162,7 +162,7 @@ const CreateAuction = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Start Time</label>
+              <label className="text-sm font-bold text-zinc-700">Start Time <span className="text-red-500">*</span></label>
               <DatePicker
                 selected={startTime}
                 onChange={(date) => setStartTime(date)}
@@ -176,7 +176,7 @@ const CreateAuction = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">End Time</label>
+              <label className="text-sm font-bold text-zinc-700">End Time <span className="text-red-500">*</span></label>
               <DatePicker
                 selected={endTime}
                 onChange={(date) => setEndTime(date)}
@@ -191,7 +191,7 @@ const CreateAuction = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-zinc-700">Description</label>
+            <label className="text-sm font-bold text-zinc-700">Description <span className="text-red-500">*</span></label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

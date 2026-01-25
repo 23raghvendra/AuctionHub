@@ -24,8 +24,8 @@ const auctionSchema = new mongoose.Schema({
     default: 10,
   },
   currentBid: { type: Number, default: 0 },
-  startTime: String,
-  endTime: String,
+  startTime: Date,
+  endTime: Date,
   image: {
     public_id: {
       type: String,
@@ -45,7 +45,7 @@ const auctionSchema = new mongoose.Schema({
     {
       userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Bid",
+        ref: "User",
       },
       userName: String,
       profileImage: String,

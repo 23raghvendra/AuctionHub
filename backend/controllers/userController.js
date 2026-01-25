@@ -5,15 +5,36 @@ import { v2 as cloudinary } from "cloudinary";
 import { generateToken } from "../utils/jwtToken.js";
 
 export const register = catchAsyncErrors(async (req, res, next) => {
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return next(new ErrorHandler("Profile Image Required.", 400));
-  }
+  // Image is now optional
+  let imageUploadResult = {
+    public_id: "default_avatar",
+    url: "https://res.cloudinary.com/demo/image/upload/v1574094077/face_top.jpg"
+  };
 
-  const { profileImage } = req.files;
+  if (req.files && req.files.profileImage) {
+    const { profileImage } = req.files;
+    const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedFormats.includes(profileImage.mimetype)) {
+      return next(new ErrorHandler("File format not supported. Use PNG, JPEG or WEBP.", 400));
+    }
 
-  const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
-  if (!allowedFormats.includes(profileImage.mimetype)) {
-    return next(new ErrorHandler("File format not supported.", 400));
+    try {
+      const cloudinaryResponse = await cloudinary.uploader.upload(
+        profileImage.tempFilePath,
+        { folder: "MERN_AUCTION_PLATFORM_USERS" }
+      );
+      if (!cloudinaryResponse || cloudinaryResponse.error) {
+        console.error("Cloudinary Error:", cloudinaryResponse.error || "Unknown");
+        return next(new ErrorHandler("Failed to upload profile image.", 500));
+      }
+      imageUploadResult = {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url
+      };
+    } catch (error) {
+      console.error("Cloudinary upload failed:", error);
+      return next(new ErrorHandler("Failed to upload profile image.", 500));
+    }
   }
 
   const {
@@ -52,41 +73,7 @@ export const register = catchAsyncErrors(async (req, res, next) => {
   if (isRegistered) {
     return next(new ErrorHandler("User already registered.", 400));
   }
-  let cloudinaryResponse;
-  try {
-    cloudinaryResponse = await cloudinary.uploader.upload(
-      profileImage.tempFilePath,
-      {
-        folder: "MERN_AUCTION_PLATFORM_USERS",
-      }
-    );
-  } catch (error) {
-    console.error("Cloudinary error:", error.message || error);
-    // Use dummy data if Cloudinary fails (e.g. due to invalid keys)
-    cloudinaryResponse = {
-      public_id: "default_avatar",
-      secure_url: "https://res.cloudinary.com/demo/image/upload/v1574094077/face_top.jpg", // Default placeholder
-      error: false
-    };
-  }
 
-  if (!cloudinaryResponse || cloudinaryResponse.error) {
-    console.error(
-      "Cloudinary error:",
-      cloudinaryResponse.error || "Unknown cloudinary error."
-    );
-    // If we want to enforce image upload, we would error here. 
-    // But to fix the user's issue with invalid keys, we allow it.
-    // However, the catch block above handles the crash. 
-    // If we land here, it means even the fallback or the upload returned an explicit error object.
-
-    // For now, let's allow registration even if image fails, provided we have handled it.
-    if (!cloudinaryResponse) {
-      return next(
-        new ErrorHandler("Failed to upload profile image to cloudinary.", 500)
-      );
-    }
-  }
   const user = await User.create({
     userName,
     email,
@@ -94,10 +81,7 @@ export const register = catchAsyncErrors(async (req, res, next) => {
     phone,
     address,
     role,
-    profileImage: {
-      public_id: cloudinaryResponse.public_id,
-      url: cloudinaryResponse.secure_url,
-    },
+    profileImage: imageUploadResult,
     paymentMethods: {
       bankTransfer: {
         bankAccountNumber,
@@ -168,8 +152,11 @@ export const logout = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const fetchLeaderboard = catchAsyncErrors(async (req, res, next) => {
-  const users = await User.find({ moneySpent: { $gt: 0 } });
-  const leaderboard = users.sort((a, b) => b.moneySpent - a.moneySpent);
+  const leaderboard = await User.find({ moneySpent: { $gt: 0 } })
+    .sort({ moneySpent: -1 })
+    .limit(100)
+    .select('userName profileImage moneySpent auctionsWon');
+
   res.status(200).json({
     success: true,
     leaderboard,

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo } from "react";
 import io from "socket.io-client";
+import { API_BASE_URL } from "@/config/api";
 
 const SocketContext = createContext(null);
 
@@ -10,7 +11,7 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
     const socket = useMemo(
         () =>
-            io("http://localhost:5001", {
+            io(API_BASE_URL, {
                 withCredentials: true,
                 transports: ["websocket"],
             }),
@@ -35,3 +36,4 @@ export const SocketProvider = ({ children }) => {
         <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
     );
 };
+

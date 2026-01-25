@@ -55,7 +55,7 @@ export const endedAuctionCron = () => {
           await auction.save();
         }
       } catch (error) {
-        return next(console.error(error || "Some error in ended auction cron"));
+        console.error("Error processing ended auction:", error.message || error);
       }
     }
   });

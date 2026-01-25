@@ -97,10 +97,21 @@ export const addNewAuctionItem = catchAsyncErrors(async (req, res, next) => {
     console.error("Cloudinary error:", error.message || error);
 
     // Fallback: Save file locally if Cloudinary fails
-    const fileName = `auction_${Date.now()}_${image.name}`;
+    // Sanitize filename: remove spaces and special chars
+    const sanitizedName = image.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._-]/g, "");
+    const fileName = `auction_${Date.now()}_${sanitizedName}`;
     const uploadPath = `./uploads/${fileName}`;
-    // Assuming backend runs on port 5001 - dynamically setting would be better but hardcoding for this fix
-    const localUrl = `http://localhost:5001/uploads/${fileName}`;
+
+    // Ensure uploads directory exists
+    // Note: fs and fs.promises should be imported at top, but for minimal diff:
+    const fs = await import("fs");
+    if (!fs.existsSync("./uploads")) {
+      fs.mkdirSync("./uploads");
+    }
+
+    // Use environment variable for port if available, else default to 5001
+    const port = process.env.PORT || 5001;
+    const localUrl = `http://localhost:${port}/uploads/${fileName}`;
 
     try {
       await image.mv(uploadPath);

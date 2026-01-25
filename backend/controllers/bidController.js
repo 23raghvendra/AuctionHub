@@ -8,119 +8,145 @@ import { getSocketIO } from "../socket.js";
 
 export const placeBid = catchAsyncErrors(async (req, res, next) => {
   const { id } = req.params;
-  const auctionItem = await Auction.findById(id);
-  if (!auctionItem) {
-    return next(new ErrorHandler("Auction Item not found.", 404));
-  }
+  const { amount, bidType = "manual" } = req.body;
 
-  if (auctionItem.status !== "Active") {
-    return next(new ErrorHandler("Auction is not active.", 400));
-  }
-  if (auctionItem.endTime < Date.now()) {
-    return next(new ErrorHandler("Auction is ended.", 400));
-  }
-  if (auctionItem.createdBy.toString() === req.user._id.toString()) {
-    return next(new ErrorHandler("You cannot bid on your own auction.", 400));
-  }
-
-  const { amount, bidType = "manual" } = req.body; // bidType: 'manual' or 'auto'
   if (!amount) {
     return next(new ErrorHandler("Please place your bid.", 404));
   }
 
-  const minIncrement = auctionItem.minBidIncrement || 10;
+  // Retry mechanism for optimistic locking
+  const MAX_RETRIES = 5;
+  let attempt = 0;
 
-  // Handle Auto-Bid Setup
-  if (bidType === "auto") {
-    // For auto-bid, 'amount' is the maximum limit
-    if (amount <= auctionItem.currentBid) {
-      return next(new ErrorHandler("Auto-bid limit must be greater than current bid.", 400));
-    }
+  while (attempt < MAX_RETRIES) {
+    attempt++;
 
-    // Update or Add Auto-Bid
-    const existingAutoBidIndex = auctionItem.autoBids.findIndex(
-      (ab) => ab.userId.toString() === req.user._id.toString()
-    );
+    try {
+      const auctionItem = await Auction.findById(id);
+      if (!auctionItem) {
+        return next(new ErrorHandler("Auction Item not found.", 404));
+      }
 
-    if (existingAutoBidIndex !== -1) {
-      auctionItem.autoBids[existingAutoBidIndex].maxBid = amount;
-    } else {
-      auctionItem.autoBids.push({
-        userId: req.user._id,
-        maxBid: amount,
+      if (auctionItem.status !== "Active") {
+        return next(new ErrorHandler("Auction is not active.", 400));
+      }
+      if (auctionItem.endTime < Date.now()) {
+        return next(new ErrorHandler("Auction is ended.", 400));
+      }
+      if (auctionItem.createdBy.toString() === req.user._id.toString()) {
+        return next(new ErrorHandler("You cannot bid on your own auction.", 400));
+      }
+
+      const minIncrement = auctionItem.minBidIncrement || 10;
+
+      // Handle Auto-Bid Setup
+      if (bidType === "auto") {
+        if (amount <= auctionItem.currentBid) {
+          return next(new ErrorHandler("Auto-bid limit must be greater than current bid.", 400));
+        }
+
+        const existingAutoBidIndex = auctionItem.autoBids.findIndex(
+          (ab) => ab.userId.toString() === req.user._id.toString()
+        );
+
+        if (existingAutoBidIndex !== -1) {
+          auctionItem.autoBids[existingAutoBidIndex].maxBid = amount;
+        } else {
+          auctionItem.autoBids.push({
+            userId: req.user._id,
+            maxBid: amount,
+          });
+        }
+      } else {
+        // Manual Bid Validation
+        if (amount <= auctionItem.currentBid) {
+          return next(new ErrorHandler("Bid amount must be greater than the current bid.", 400));
+        }
+        if (amount < auctionItem.currentBid + minIncrement) {
+          return next(new ErrorHandler(`Bid must be at least ${auctionItem.currentBid + minIncrement}`, 400));
+        }
+        if (amount < auctionItem.startingBid) {
+          return next(new ErrorHandler("Bid amount must be greater than starting bid.", 404));
+        }
+
+        await processBid(auctionItem, req.user._id, amount);
+      }
+
+      // Resolve Auto-Bids (Proxy Bidding Loop)
+      let active = true;
+      let iterations = 0;
+      const MAX_ITERATIONS = 50;
+
+      while (active && iterations < MAX_ITERATIONS) {
+        active = false;
+        iterations++;
+
+        const nextMinBid = auctionItem.currentBid + minIncrement;
+        const candidates = auctionItem.autoBids.filter(ab =>
+          ab.userId.toString() !== auctionItem.highestBidder?.toString() &&
+          ab.maxBid >= nextMinBid
+        );
+
+        if (candidates.length > 0) {
+          candidates.sort((a, b) => b.maxBid - a.maxBid);
+          const bestCandidate = candidates[0];
+          const bidAmount = nextMinBid;
+
+          await processBid(auctionItem, bestCandidate.userId, bidAmount);
+          active = true;
+        }
+      }
+
+      // Use optimistic locking with version check
+      const savedAuction = await Auction.findOneAndUpdate(
+        { _id: id, __v: auctionItem.__v },
+        {
+          $set: {
+            currentBid: auctionItem.currentBid,
+            highestBidder: auctionItem.highestBidder,
+            bids: auctionItem.bids,
+            autoBids: auctionItem.autoBids
+          },
+          $inc: { __v: 1 }
+        },
+        { new: true }
+      );
+
+      if (!savedAuction) {
+        // Version conflict - another bid was placed, retry
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 100 * attempt)); // Exponential backoff
+          continue;
+        }
+        return next(new ErrorHandler("Bid conflict. Please try again.", 409));
+      }
+
+      // Success - emit socket event
+      const io = getSocketIO();
+      io.emit("auctionUpdate", {
+        auctionId: id,
+        currentBid: savedAuction.currentBid,
+        bids: savedAuction.bids,
+        highestBidder: savedAuction.highestBidder
       });
-    }
 
-    // We don't place a bid immediately unless needed.
-    // The resolution loop below will handle placing the bid if this auto-bid is competitive.
-  } else {
-    // Manual Bid Validation
-    if (amount <= auctionItem.currentBid) {
-      return next(new ErrorHandler("Bid amount must be greater than the current bid.", 400));
-    }
-    if (amount < auctionItem.currentBid + minIncrement) {
-      return next(new ErrorHandler(`Bid must be at least ${auctionItem.currentBid + minIncrement}`, 400));
-    }
-    if (amount < auctionItem.startingBid) {
-      return next(new ErrorHandler("Bid amount must be greater than starting bid.", 404));
-    }
+      return res.status(201).json({
+        success: true,
+        message: bidType === "auto" ? "Auto-bid configured." : "Bid placed.",
+        currentBid: savedAuction.currentBid,
+        autoBidActive: bidType === "auto"
+      });
 
-    // Place the manual bid first
-    await processBid(auctionItem, req.user._id, amount);
-  }
-
-  // Resolve Auto-Bids (Proxy Bidding Loop)
-  // This loop runs until no auto-bid can beat the current highest bid
-  let active = true;
-  let iterations = 0;
-  const MAX_ITERATIONS = 50; // Safety break
-
-  while (active && iterations < MAX_ITERATIONS) {
-    active = false;
-    iterations++;
-
-    // Find the highest auto-bidder who is NOT the current highest bidder
-    // and whose maxBid is high enough to place a valid new bid
-    const nextMinBid = auctionItem.currentBid + minIncrement;
-
-    const candidates = auctionItem.autoBids.filter(ab =>
-      ab.userId.toString() !== auctionItem.highestBidder?.toString() &&
-      ab.maxBid >= nextMinBid
-    );
-
-    if (candidates.length > 0) {
-      // Sort by maxBid descending to find the strongest competitor
-      candidates.sort((a, b) => b.maxBid - a.maxBid);
-      const bestCandidate = candidates[0];
-
-      // Place bid for this candidate
-      // They bid the minimum necessary: currentBid + increment
-      // But if their maxBid is exactly the nextMinBid, they bid that.
-      // If they have more headroom, they still only bid nextMinBid to lead.
-      const bidAmount = nextMinBid;
-
-      await processBid(auctionItem, bestCandidate.userId, bidAmount);
-      active = true; // A bid was placed, so we need to check if anyone else can beat it
+    } catch (error) {
+      if (error.name === 'VersionError' && attempt < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+        continue;
+      }
+      throw error;
     }
   }
 
-  await auctionItem.save();
-
-  // Emit Socket Event
-  const io = getSocketIO();
-  io.emit("auctionUpdate", {
-    auctionId: id,
-    currentBid: auctionItem.currentBid,
-    bids: auctionItem.bids,
-    highestBidder: auctionItem.highestBidder
-  });
-
-  res.status(201).json({
-    success: true,
-    message: bidType === "auto" ? "Auto-bid configured." : "Bid placed.",
-    currentBid: auctionItem.currentBid,
-    autoBidActive: bidType === "auto"
-  });
+  return next(new ErrorHandler("Failed to place bid after multiple attempts.", 500));
 });
 
 
@@ -150,7 +176,6 @@ async function processBid(auctionItem, userId, amount) {
   if (existingBid && existingBidInAuction) {
     existingBidInAuction.amount = amount;
     existingBid.amount = amount;
-    await existingBidInAuction.save();
     await existingBid.save();
   } else {
     const bidderDetail = await User.findById(userId);

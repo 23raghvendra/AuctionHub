@@ -81,7 +81,7 @@ const SideDrawer = () => {
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
           <div className="space-y-1">
-            <NavLink to="/auctions" icon={RiAuctionFill} label="Auctions" />
+            <NavLink to="/auctions" icon={RiAuctionFill} label="Live Auctions" />
             <NavLink to="/leaderboard" icon={MdLeaderboard} label="Leaderboard" />
           </div>
 

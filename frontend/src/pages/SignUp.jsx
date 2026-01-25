@@ -78,7 +78,7 @@ const SignUp = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Full Name</label>
+                <label className="text-sm font-bold text-zinc-700">Full Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={userName}
@@ -87,7 +87,7 @@ const SignUp = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Email</label>
+                <label className="text-sm font-bold text-zinc-700">Email <span className="text-red-500">*</span></label>
                 <input
                   type="email"
                   value={email}
@@ -96,7 +96,7 @@ const SignUp = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Phone</label>
+                <label className="text-sm font-bold text-zinc-700">Phone <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   value={phone}
@@ -105,7 +105,7 @@ const SignUp = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Address</label>
+                <label className="text-sm font-bold text-zinc-700">Address <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={address}
@@ -114,7 +114,7 @@ const SignUp = () => {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Role</label>
+                <label className="text-sm font-bold text-zinc-700">Role <span className="text-red-500">*</span></label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
@@ -126,7 +126,7 @@ const SignUp = () => {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-700">Password</label>
+                <label className="text-sm font-bold text-zinc-700">Password <span className="text-red-500">*</span></label>
                 <input
                   type="password"
                   value={password}
@@ -137,7 +137,7 @@ const SignUp = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-zinc-700">Profile Image</label>
+              <label className="text-sm font-bold text-zinc-700">Profile Image <span className="text-zinc-400 font-normal">(Optional)</span></label>
               <div className="flex items-center gap-4 p-4 bg-zinc-50 rounded-xl border border-zinc-200 border-dashed">
                 <img
                   src={profileImagePreview || "/imageHolder.jpg"}
@@ -160,7 +160,7 @@ const SignUp = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-zinc-700">Bank Name</label>
+                  <label className="text-sm font-bold text-zinc-700">Bank Name <span className="text-red-500">*</span></label>
                   <select
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
@@ -174,7 +174,7 @@ const SignUp = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-zinc-700">Account Number</label>
+                  <label className="text-sm font-bold text-zinc-700">Account Number <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={bankAccountNumber}
@@ -184,7 +184,7 @@ const SignUp = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-zinc-700">Account Name</label>
+                  <label className="text-sm font-bold text-zinc-700">Account Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={bankAccountName}
@@ -193,7 +193,7 @@ const SignUp = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-zinc-700">Easypaisa</label>
+                  <label className="text-sm font-bold text-zinc-700">Easypaisa <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     value={easypaisaAccountNumber}
@@ -202,7 +202,7 @@ const SignUp = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-zinc-700">Paypal Email</label>
+                  <label className="text-sm font-bold text-zinc-700">Paypal Email <span className="text-red-500">*</span></label>
                   <input
                     type="email"
                     value={paypalEmail}

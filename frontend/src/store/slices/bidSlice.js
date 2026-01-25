@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { getAuctionDetail } from "./auctionSlice";
+import { API_BASE_URL } from "@/config/api";
 
 const bidSlice = createSlice({
   name: "bid",
@@ -36,7 +37,7 @@ const bidSlice = createSlice({
 export const placeBid = (id, data) => async (dispatch) => {
   dispatch(bidSlice.actions.bidRequest());
   try {
-    const response = await axios.post(`http://localhost:5001/api/v1/bid/place/${id}`, data, {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/bid/place/${id}`, data, {
       withCredentials: true,
       headers: { "Content-Type": "application/json" },
     });
@@ -52,7 +53,7 @@ export const placeBid = (id, data) => async (dispatch) => {
 export const getUserWonItems = () => async (dispatch) => {
   dispatch(bidSlice.actions.getWonItemsRequest());
   try {
-    const response = await axios.get("http://localhost:5001/api/v1/bid/won-items", {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/bid/won-items`, {
       withCredentials: true,
     });
     dispatch(bidSlice.actions.getWonItemsSuccess(response.data.items));

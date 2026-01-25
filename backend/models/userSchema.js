@@ -17,17 +17,17 @@ const userSchema = new mongoose.Schema({
   address: String,
   phone: {
     type: String,
-    minLength: [11, "Phone Number must caontain exact 11 digits."],
-    maxLength: [11, "Phone Number must caontain exact 11 digits."],
+    minLength: [10, "Phone Number must contain exact 10 digits."],
+    maxLength: [10, "Phone Number must contain exact 10 digits."],
   },
   profileImage: {
     public_id: {
       type: String,
-      required: true,
+      required: false,
     },
     url: {
       type: String,
-      required: true,
+      required: false, // Made optional as requested
     },
   },
   paymentMethods: {
@@ -55,7 +55,7 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-    moneySpent: {
+  moneySpent: {
     type: Number,
     default: 0,
   },

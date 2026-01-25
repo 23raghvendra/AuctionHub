@@ -45,24 +45,26 @@ const Auctions = () => {
                 <SkeletonAuctionCard key={index} />
               ))
             ) : (
-              // Render Actual Auctions
-              allAuctions.map((element, index) => (
-                <motion.div
-                  key={element._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card
-                    title={element.title}
-                    startTime={element.startTime}
-                    endTime={element.endTime}
-                    imgSrc={element.image?.url}
-                    startingBid={element.startingBid}
-                    id={element._id}
-                  />
-                </motion.div>
-              ))
+              // Render Active Auctions Only
+              allAuctions
+                .filter(item => new Date(item.endTime) > Date.now())
+                .map((element, index) => (
+                  <motion.div
+                    key={element._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <Card
+                      title={element.title}
+                      startTime={element.startTime}
+                      endTime={element.endTime}
+                      imgSrc={element.image?.url}
+                      startingBid={element.startingBid}
+                      id={element._id}
+                    />
+                  </motion.div>
+                ))
             )}
           </div>
 
